@@ -1,0 +1,14 @@
+.vscode/**
+src/**
+out/test/**
+sample-workspace/**
+**/*.test.ts
+**/*.map
+tsconfig*.json
+jest.config.js
+.eslintrc.json
+.gitignore
+node_modules/**
+!node_modules/typescript/**
+**/*.vsix
+coverage/**

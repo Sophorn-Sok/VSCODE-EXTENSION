@@ -1,0 +1,180 @@
+{
+  "name": "dev-companion-ai",
+  "displayName": "Dev Companion AI",
+  "description": "Local-first AI dev companion: terminal error explanations, API discovery, architecture visualization, dependency analysis, test generation, and documentation generation — all powered by a local Ollama instance.",
+  "version": "0.1.0",
+  "publisher": "dev-companion",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0B1220",
+    "theme": "dark"
+  },
+  "keywords": [
+    "ai",
+    "ollama",
+    "local",
+    "api",
+    "architecture",
+    "documentation",
+    "testing",
+    "dependencies",
+    "terminal"
+  ],
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": ["Machine Learning", "Visualization", "Testing", "Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Dev Companion AI",
+      "properties": {
+        "devCompanion.model": {
+          "type": "string",
+          "default": "qwen3:8b",
+          "description": "Ollama model name used for AI-powered features."
+        },
+        "devCompanion.ollamaUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:11434",
+          "description": "Base URL of the local Ollama server."
+        },
+        "devCompanion.apiBaseUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "Host used when generating cURL commands in API Explorer."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "devCompanion",
+          "title": "Dev Companion AI",
+          "icon": "media/activitybar.svg"
+        }
+      ]
+    },
+    "views": {
+      "devCompanion": [
+        {
+          "id": "devCompanion.sidebar",
+          "name": "Actions"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "devCompanion.sidebar",
+        "contents": "Open a folder to use Dev Companion AI.\n[Open Folder](command:workbench.action.files.openFolder)\n\nAI features need a local Ollama server. Default: `qwen3:8b` at `http://127.0.0.1:11434`.\n[Open Settings](command:devCompanion.openSettings)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "devCompanion.explainLastTerminalError",
+        "title": "Explain Last Terminal Error",
+        "category": "Dev Companion AI",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "devCompanion.scanApiEndpoints",
+        "title": "Scan API Endpoints",
+        "category": "Dev Companion AI",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "devCompanion.visualizeArchitecture",
+        "title": "Visualize Architecture",
+        "category": "Dev Companion AI",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "devCompanion.exportArchitectureDiagram",
+        "title": "Export Architecture Diagram",
+        "category": "Dev Companion AI",
+        "icon": "$(export)"
+      },
+      {
+        "command": "devCompanion.analyzeDependencies",
+        "title": "Analyze Dependencies",
+        "category": "Dev Companion AI",
+        "icon": "$(package)"
+      },
+      {
+        "command": "devCompanion.generateTests",
+        "title": "Generate Unit Tests",
+        "category": "Dev Companion AI",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "devCompanion.generateDocumentation",
+        "title": "Generate Documentation",
+        "category": "Dev Companion AI",
+        "icon": "$(book)"
+      },
+      {
+        "command": "devCompanion.openSettings",
+        "title": "Open Settings",
+        "category": "Dev Companion AI",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "devCompanion.showStatus",
+        "title": "Show Ollama Status",
+        "category": "Dev Companion AI"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "devCompanion.generateTests",
+          "when": "editorHasSelection || resourceLangId == typescript || resourceLangId == javascript",
+          "group": "devCompanion"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "devCompanion.generateTests",
+          "when": "resourceLangId == typescript || resourceLangId == javascript",
+          "group": "devCompanion"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "devCompanion.openSettings",
+          "when": "view == devCompanion.sidebar",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "pretest": "tsc -p ./ --noEmit",
+    "package": "vsce package --allow-missing-repository",
+    "publish": "vsce publish --allow-missing-repository"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.93.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "@vscode/vsce": "^3.2.2",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0"
+  },
+  "dependencies": {
+    "typescript": "^5.5.0"
+  }
+}
