@@ -39,7 +39,7 @@ export function extractSignatures(sourceText: string, filePath: string): Extract
     code: node.getText(sourceFile)
   });
 
-  ts.forEachChild(sourceFile, (node) => {
+  const visit = (node: ts.Node) => {
     if (ts.isFunctionDeclaration(node) && node.name) {
       functions.push(toFunctionSignature(node, node.name.text));
       return;
@@ -72,8 +72,18 @@ export function extractSignatures(sourceText: string, filePath: string): Extract
         isExported: isExported(node),
         methods
       });
+      return;
     }
-  });
+
+    // Recurse into namespace/module blocks so nested functions and
+    // classes are still discovered (previously only top-level was scanned).
+    if (ts.isModuleDeclaration(node) && node.body) {
+      ts.forEachChild(node.body, visit);
+      return;
+    }
+  };
+
+  ts.forEachChild(sourceFile, visit);
 
   return { functions, classes };
 }

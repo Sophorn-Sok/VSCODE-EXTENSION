@@ -45,4 +45,12 @@ describe('extractSignatures', () => {
 
     expect(functions[0].code).toContain("return 'hi ' + name;");
   });
+
+  it('extracts a function nested inside a namespace block', () => {
+    const source = `namespace MyUtils {\n  export function greet(name: string) {\n    return 'hi ' + name;\n  }\n}`;
+    const { functions } = extractSignatures(source, 'utils.ts');
+
+    expect(functions).toHaveLength(1);
+    expect(functions[0]).toMatchObject({ name: 'greet', isExported: true });
+  });
 });
