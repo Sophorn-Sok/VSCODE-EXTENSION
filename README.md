@@ -116,6 +116,13 @@ You can also put a `config.json` in the project folder. If you set values in Set
 
 ---
 
+## Known Issues
+
+- **Generate Unit Tests / Generate Documentation may time out** on longer AI responses — this is a known limitation currently being investigated. See `docs/qa-report-2026-09-15.md` for details.
+- The default model (`qwen3:8b`) requires significant RAM to load. If you experience out-of-memory errors or repeated failures, try a lighter model such as `llama3:latest` in Settings.
+
+---
+
 ## If something goes wrong
 
 | Problem | What to try |
