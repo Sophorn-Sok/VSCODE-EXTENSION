@@ -26,6 +26,8 @@ export interface DependencyAnalysisResult {
   summary: DependencyAnalysisSummary;
   /** AI-generated summary of findings with suggested next steps, when available. */
   aiSummary?: string;
+  /** Set when an AIProvider was supplied but the summary call failed (e.g. Ollama unreachable) — the rest of the report is still valid. */
+  aiSummaryError?: string;
 }
 
 /** Injectable shell command runner, used so tests never invoke a real `npm` process. */

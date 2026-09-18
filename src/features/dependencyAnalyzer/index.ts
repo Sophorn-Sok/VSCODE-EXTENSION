@@ -79,6 +79,8 @@ function writeChannel(channel: vscode.OutputChannel, result: DependencyAnalysisR
   if (result.aiSummary) {
     channel.appendLine('AI summary:');
     channel.appendLine(result.aiSummary);
+  } else if (result.aiSummaryError) {
+    channel.appendLine(`AI summary unavailable: ${result.aiSummaryError}`);
   }
 }
 
@@ -116,7 +118,9 @@ function renderWebviewHtml(result: DependencyAnalysisResult): string {
 
   const ai = result.aiSummary
     ? `<div class="ai"><strong>AI summary</strong><pre>${escapeHtml(result.aiSummary)}</pre></div>`
-    : '';
+    : result.aiSummaryError
+      ? `<div class="warn"><strong>AI summary unavailable</strong><div>${escapeHtml(result.aiSummaryError)}</div></div>`
+      : '';
 
   return wrapWebviewHtml({
     title: 'Dependencies',

@@ -44,4 +44,17 @@ describe('generateClassDoc', () => {
     const promptArg = (provider.complete as jest.Mock).mock.calls[0][0] as string;
     expect(promptArg).toContain('(none)');
   });
+
+  it('falls back to a note instead of throwing when the AIProvider call fails', async () => {
+    const provider: AIProvider = {
+      name: 'ollama',
+      complete: jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:11434')),
+      isAvailable: jest.fn().mockResolvedValue(false)
+    };
+
+    const doc = await generateClassDoc(provider, sampleClass);
+
+    expect(doc).toContain('AI documentation unavailable');
+    expect(doc).toContain('ECONNREFUSED');
+  });
 });

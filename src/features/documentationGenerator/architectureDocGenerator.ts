@@ -15,10 +15,14 @@ export async function generateArchitectureSummary(aiProvider: AIProvider, tree: 
 Folder structure:
 ${treeText}`;
 
-  const { text } = await aiProvider.complete(prompt, {
-    systemPrompt: 'You are a technical writer generating an architecture overview from a project folder structure.'
-  });
-  return text.trim();
+  try {
+    const { text } = await aiProvider.complete(prompt, {
+      systemPrompt: 'You are a technical writer generating an architecture overview from a project folder structure.'
+    });
+    return text.trim();
+  } catch (err) {
+    return `_AI summary unavailable: ${(err as Error).message}_`;
+  }
 }
 
 export function renderTreeAsText(node: FolderTreeNode, depth = 0): string {

@@ -43,6 +43,24 @@ describe('analyzeDependencies', () => {
     expect(aiProvider.complete).toHaveBeenCalledTimes(1);
   });
 
+  it('still returns npm-derived results when the AIProvider call fails', async () => {
+    const runCommand = runCommandFor(
+      JSON.stringify({ lodash: { current: '4.17.20', wanted: '4.17.21', latest: '4.17.21' } }),
+      JSON.stringify({ vulnerabilities: {}, metadata: { dependencies: { total: 10 } } })
+    );
+    const aiProvider: AIProvider = {
+      name: 'ollama',
+      complete: jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:11434')),
+      isAvailable: jest.fn().mockResolvedValue(false)
+    };
+
+    const result = await analyzeDependencies('/repo', { runCommand, aiProvider });
+
+    expect(result.outdated).toHaveLength(1);
+    expect(result.aiSummary).toBeUndefined();
+    expect(result.aiSummaryError).toContain('ECONNREFUSED');
+  });
+
   it('handles no outdated packages and no vulnerabilities', async () => {
     const runCommand = runCommandFor('', '');
 

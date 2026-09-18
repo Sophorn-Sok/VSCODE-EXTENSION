@@ -44,4 +44,17 @@ describe('generateArchitectureSummary', () => {
     // workspace root path — so it cannot re-implement folder traversal itself.
     expect(generateArchitectureSummary.length).toBe(2);
   });
+
+  it('falls back to a note instead of throwing when the AIProvider call fails', async () => {
+    const aiProvider: AIProvider = {
+      name: 'ollama',
+      complete: jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:11434')),
+      isAvailable: jest.fn().mockResolvedValue(false)
+    };
+
+    const summary = await generateArchitectureSummary(aiProvider, sampleTree);
+
+    expect(summary).toContain('AI summary unavailable');
+    expect(summary).toContain('ECONNREFUSED');
+  });
 });

@@ -90,4 +90,25 @@ describe('generateDocumentation', () => {
 
     expect(result.architectureGuideMarkdown).toContain('No folder hierarchy data available');
   });
+
+  it('still writes usable docs when the AIProvider is unreachable (e.g. Ollama down)', async () => {
+    const root = makeTmpDir();
+    fs.writeFileSync(path.join(root, 'math.ts'), 'export function add(a: number, b: number) { return a + b; }');
+    const endpoints: ApiEndpoint[] = [
+      { method: 'GET', path: '/api/ping', filePath: 'ping.ts', line: 1, framework: 'express', bodyFields: [] }
+    ];
+    const unreachableProvider: AIProvider = {
+      name: 'ollama',
+      complete: jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:11434')),
+      isAvailable: jest.fn().mockResolvedValue(false)
+    };
+
+    const result = await generateDocumentation({ aiProvider: unreachableProvider, rootDir: root, endpoints });
+
+    // Static analysis (endpoints, parsed function signatures) is unaffected —
+    // only the AI-generated prose degrades to a fallback note.
+    expect(result.apiDocumentationMarkdown).toContain('GET /api/ping');
+    expect(result.architectureGuideMarkdown).toContain('add(a: number, b: number)');
+    expect(result.architectureGuideMarkdown).toContain('AI documentation unavailable');
+  });
 });

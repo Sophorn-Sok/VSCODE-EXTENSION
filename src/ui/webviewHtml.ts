@@ -113,10 +113,8 @@ export function wrapWebviewHtml(options: { title: string; body: string; script?:
     }
     .diagram-wrap svg { display: block; max-width: none; }
     .diagram-wrap .diagram-bg { fill: var(--vscode-editor-background); }
-    .diagram-wrap .node-directory { fill: var(--vscode-button-background); }
-    .diagram-wrap .node-file { fill: var(--vscode-badge-background, #6e7681); }
-    .diagram-wrap .node-label { fill: var(--vscode-button-foreground); }
     .diagram-wrap .edge { stroke: var(--vscode-foreground); opacity: 0.45; }
+    .diagram-wrap .legend-label { fill: var(--vscode-foreground); }
   </style>
 </head>
 <body>

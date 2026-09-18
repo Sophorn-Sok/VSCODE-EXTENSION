@@ -28,20 +28,28 @@ export function activateDocumentationGenerator(
         return;
       }
 
-      const missing: string[] = [];
-      if (apiExplorer.getEndpoints().length === 0) {
-        missing.push('API scan');
-      }
-      if (!architectureVisualizer.getFolderTree()) {
-        missing.push('architecture diagram');
-      }
-      if (missing.length > 0) {
+      const needsApiScan = apiExplorer.getEndpoints().length === 0;
+      const needsArchitectureScan = !architectureVisualizer.getFolderTree();
+      if (needsApiScan || needsArchitectureScan) {
+        const missing = [needsApiScan && 'API scan', needsArchitectureScan && 'architecture diagram']
+          .filter(Boolean)
+          .join(' and ');
         const choice = await vscode.window.showWarningMessage(
-          `Dev Companion AI: documentation is richer after an ${missing.join(' and ')}. Generate anyway?`,
+          `Dev Companion AI: no ${missing} has been run yet, so that section of the documentation would be empty.`,
+          'Scan and generate',
           'Generate anyway',
           'Cancel'
         );
-        if (choice !== 'Generate anyway') {
+        if (choice === 'Scan and generate') {
+          // Delegates to F2/F3's own registered commands — never touches
+          // their scanning internals directly (see architecturalBoundary.test.ts).
+          if (needsApiScan) {
+            await vscode.commands.executeCommand('devCompanion.scanApiEndpoints');
+          }
+          if (needsArchitectureScan) {
+            await vscode.commands.executeCommand('devCompanion.visualizeArchitecture');
+          }
+        } else if (choice !== 'Generate anyway') {
           return;
         }
       }

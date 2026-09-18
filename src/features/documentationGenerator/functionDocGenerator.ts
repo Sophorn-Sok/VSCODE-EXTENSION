@@ -15,8 +15,15 @@ File: ${fn.filePath}
 Source:
 ${fn.code}`;
 
-  const { text } = await aiProvider.complete(prompt, {
-    systemPrompt: 'You are a technical writer generating clear, accurate function documentation.'
-  });
-  return text.trim();
+  try {
+    const { text } = await aiProvider.complete(prompt, {
+      systemPrompt: 'You are a technical writer generating clear, accurate function documentation.'
+    });
+    return text.trim();
+  } catch (err) {
+    // One unreachable AI call shouldn't fail the whole documentation run —
+    // fall back to a note so the rest of the doc (and other functions/classes)
+    // still gets generated and written to disk.
+    return `_AI documentation unavailable: ${(err as Error).message}_`;
+  }
 }

@@ -8,9 +8,17 @@ import { CommandRunner } from './types';
  * useful JSON to report (outdated packages / vulnerabilities found), which is
  * the normal case, not a failure.
  */
+/**
+ * `npm outdated`/`npm audit` can hit the registry over the network — without
+ * a timeout, a slow or unreachable registry (e.g. offline) would leave the
+ * analysis spinning indefinitely instead of falling back to whatever local
+ * data npm managed to report.
+ */
+const COMMAND_TIMEOUT_MS = 30_000;
+
 export const defaultCommandRunner: CommandRunner = (command, cwd) =>
   new Promise((resolve) => {
-    exec(command, { cwd, maxBuffer: 10 * 1024 * 1024 }, (_error, stdout, stderr) => {
+    exec(command, { cwd, maxBuffer: 10 * 1024 * 1024, timeout: COMMAND_TIMEOUT_MS }, (_error, stdout, stderr) => {
       resolve({ stdout: stdout?.toString() ?? '', stderr: stderr?.toString() ?? '' });
     });
   });

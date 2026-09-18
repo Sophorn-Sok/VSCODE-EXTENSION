@@ -17,8 +17,12 @@ File: ${cls.filePath}
 Methods:
 ${methodList || '(none)'}`;
 
-  const { text } = await aiProvider.complete(prompt, {
-    systemPrompt: 'You are a technical writer generating clear, accurate class documentation.'
-  });
-  return text.trim();
+  try {
+    const { text } = await aiProvider.complete(prompt, {
+      systemPrompt: 'You are a technical writer generating clear, accurate class documentation.'
+    });
+    return text.trim();
+  } catch (err) {
+    return `_AI documentation unavailable: ${(err as Error).message}_`;
+  }
 }

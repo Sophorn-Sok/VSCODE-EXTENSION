@@ -21,9 +21,16 @@ export async function analyzeDependencies(
   const summary = buildSummary(outdated, auditReport.vulnerabilities, auditReport.totalInstalledPackages);
 
   let aiSummary: string | undefined;
+  let aiSummaryError: string | undefined;
   if (options.aiProvider) {
-    aiSummary = await generateFindingsSummary(options.aiProvider, outdated, auditReport.vulnerabilities);
+    try {
+      aiSummary = await generateFindingsSummary(options.aiProvider, outdated, auditReport.vulnerabilities);
+    } catch (err) {
+      // The npm-derived report above is already complete and useful on its
+      // own — an unreachable AI provider should not discard it.
+      aiSummaryError = (err as Error).message;
+    }
   }
 
-  return { outdated, vulnerabilities: auditReport.vulnerabilities, summary, aiSummary };
+  return { outdated, vulnerabilities: auditReport.vulnerabilities, summary, aiSummary, aiSummaryError };
 }
