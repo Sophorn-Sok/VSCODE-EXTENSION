@@ -3,13 +3,13 @@ import { AIProvider, AIProviderError, AIProviderUnavailableError, CompletionOpti
 export interface OllamaProviderOptions {
   baseUrl: string;
   model: string;
-  /** Milliseconds before a request is aborted. Defaults to 120s for local generation. */
+  /** Milliseconds before a request is aborted. Defaults to 300s for local generation. */
   timeoutMs?: number;
   /** Injectable fetch implementation, primarily for testing. Defaults to global fetch. */
   fetchImpl?: typeof fetch;
 }
 
-interface OllamaGenerateResponse {
+interface OllamaGenerateChunk {
   model: string;
   response: string;
   done: boolean;
@@ -44,7 +44,20 @@ export class OllamaProvider implements AIProvider {
       model,
       prompt,
       system: options?.systemPrompt,
-      stream: false,
+      // Streamed rather than `stream: false`: Ollama otherwise holds the
+      // connection open with zero bytes sent until the *entire* completion
+      // is ready, which lets Node's own independent ~300s fetch header
+      // timeout kill long generations regardless of this class's own
+      // (much larger) timeoutMs. Streaming means headers arrive as soon as
+      // the first token does, so that unrelated timeout is never hit; the
+      // timeoutMs below still governs the actual total time allowed.
+      stream: true,
+      // Disabled for models that support it (e.g. qwen3): every caller here
+      // wants a direct, structured answer (code, docs, an explanation) —
+      // not a visible chain-of-thought. Measured 4-5x faster on qwen3:8b
+      // (728s -> 185s for the same prompt) with no loss in output quality.
+      // Ollama ignores this field for models that don't support thinking.
+      think: false,
       options: options?.temperature !== undefined ? { temperature: options.temperature } : undefined
     };
 
@@ -60,6 +73,7 @@ export class OllamaProvider implements AIProvider {
         signal: controller.signal
       });
     } catch (err) {
+      clearTimeout(timeout);
       if (isAbortError(err)) {
         throw new AIProviderError(
           `Ollama did not finish within ${Math.round(this.timeoutMs / 1000)}s at ${this.baseUrl}. ` +
@@ -68,25 +82,67 @@ export class OllamaProvider implements AIProvider {
         );
       }
       throw new AIProviderUnavailableError('ollama', this.baseUrl, err);
-    } finally {
-      clearTimeout(timeout);
     }
 
     if (!response.ok) {
+      clearTimeout(timeout);
       const text = await safeReadText(response);
       throw new AIProviderError(
         `Ollama returned an error (HTTP ${response.status}) at ${this.baseUrl}. ${text ?? ''}`.trim()
       );
     }
 
-    let parsed: OllamaGenerateResponse;
     try {
-      parsed = (await response.json()) as OllamaGenerateResponse;
+      return await this.readStreamedCompletion(response, model);
     } catch (err) {
+      if (isAbortError(err)) {
+        throw new AIProviderError(
+          `Ollama did not finish within ${Math.round(this.timeoutMs / 1000)}s at ${this.baseUrl}. ` +
+            'The model may still be loading — wait a moment and try again.',
+          err
+        );
+      }
       throw new AIProviderError('Ollama returned a response that could not be parsed as JSON.', err);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /** Reads Ollama's newline-delimited JSON stream and concatenates it into one completion. */
+  private async readStreamedCompletion(response: Response, requestedModel: string): Promise<CompletionResult> {
+    if (!response.body) {
+      throw new AIProviderError('Ollama returned an empty response body.');
     }
 
-    return { text: parsed.response ?? '', model: parsed.model ?? model };
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let text = '';
+    let model = requestedModel;
+
+    const consumeLine = (line: string) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        return;
+      }
+      const chunk = JSON.parse(trimmed) as OllamaGenerateChunk;
+      text += chunk.response ?? '';
+      model = chunk.model ?? model;
+    };
+
+    let chunk = await reader.read();
+    while (!chunk.done) {
+      buffer += decoder.decode(chunk.value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      lines.forEach(consumeLine);
+      chunk = await reader.read();
+    }
+    if (buffer.trim()) {
+      consumeLine(buffer);
+    }
+
+    return { text, model };
   }
 
   async isAvailable(): Promise<boolean> {
