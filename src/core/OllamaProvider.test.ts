@@ -10,9 +10,39 @@ function jsonResponse(body: unknown, ok = true, status = 200): Response {
   } as unknown as Response;
 }
 
+/** Simulates Ollama's newline-delimited JSON stream over /api/generate. */
+function streamedResponse(
+  chunks: Array<{ model: string; response: string; done: boolean }>,
+  ok = true,
+  status = 200
+): Response {
+  const encoder = new TextEncoder();
+  const lines = chunks.map((chunk) => JSON.stringify(chunk) + '\n');
+  let index = 0;
+
+  const body = {
+    getReader() {
+      return {
+        async read() {
+          if (index < lines.length) {
+            const value = encoder.encode(lines[index]);
+            index += 1;
+            return { done: false, value };
+          }
+          return { done: true, value: undefined };
+        }
+      };
+    }
+  };
+
+  return { ok, status, body, text: async () => lines.join('') } as unknown as Response;
+}
+
 describe('OllamaProvider', () => {
-  it('sends prompts to /api/generate and returns the completion text', async () => {
-    const fetchImpl = jest.fn().mockResolvedValue(jsonResponse({ model: 'qwen3:8b', response: 'hello', done: true }));
+  it('sends prompts to /api/generate (streamed) and returns the completion text', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValue(streamedResponse([{ model: 'qwen3:8b', response: 'hello', done: true }]));
     const provider = new OllamaProvider({ baseUrl: 'http://localhost:11434', model: 'qwen3:8b', fetchImpl: fetchImpl as unknown as typeof fetch });
 
     const result = await provider.complete('say hi');
@@ -22,10 +52,26 @@ describe('OllamaProvider', () => {
       'http://127.0.0.1:11434/api/generate',
       expect.objectContaining({ method: 'POST' })
     );
+    const requestBody = JSON.parse((fetchImpl.mock.calls[0][1] as RequestInit).body as string);
+    expect(requestBody).toMatchObject({ stream: true, think: false });
+  });
+
+  it('concatenates multiple streamed chunks into the final completion text', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(
+      streamedResponse([
+        { model: 'qwen3:8b', response: 'Hello, ', done: false },
+        { model: 'qwen3:8b', response: 'world!', done: true }
+      ])
+    );
+    const provider = new OllamaProvider({ baseUrl: 'http://localhost:11434', model: 'qwen3:8b', fetchImpl: fetchImpl as unknown as typeof fetch });
+
+    const result = await provider.complete('say hi');
+
+    expect(result).toEqual({ text: 'Hello, world!', model: 'qwen3:8b' });
   });
 
   it('strips trailing slashes from the base URL', async () => {
-    const fetchImpl = jest.fn().mockResolvedValue(jsonResponse({ model: 'qwen3:8b', response: 'hi', done: true }));
+    const fetchImpl = jest.fn().mockResolvedValue(streamedResponse([{ model: 'qwen3:8b', response: 'hi', done: true }]));
     const provider = new OllamaProvider({ baseUrl: 'http://localhost:11434/', model: 'qwen3:8b', fetchImpl: fetchImpl as unknown as typeof fetch });
 
     await provider.complete('hi');
@@ -34,7 +80,7 @@ describe('OllamaProvider', () => {
   });
 
   it('rewrites localhost to 127.0.0.1 so macOS IPv6 does not miss Ollama', async () => {
-    const fetchImpl = jest.fn().mockResolvedValue(jsonResponse({ model: 'qwen3:8b', response: 'ok', done: true }));
+    const fetchImpl = jest.fn().mockResolvedValue(streamedResponse([{ model: 'qwen3:8b', response: 'ok', done: true }]));
     const provider = new OllamaProvider({
       baseUrl: 'http://localhost:11434',
       model: 'qwen3:8b',
