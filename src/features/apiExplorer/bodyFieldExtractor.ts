@@ -27,6 +27,23 @@ export function extractBodyFields(windowText: string): RequestBodyField[] {
   return Array.from(fields).map((name) => ({ name }));
 }
 
+  export function extractQueryFields(windowText: string): RequestBodyField[] {
+  const fields = new Set<string>();
+
+  const destructureMatch = windowText.match(/(?:const|let|var)\s*\{\s*([^}]+)\}\s*=\s*req\.query/);
+  if (destructureMatch) {
+    addFieldNames(fields, destructureMatch[1]);
+  }
+
+  const memberAccessRegex = /req\.query\.([A-Za-z_$][\w$]*)/g;
+  let memberMatch: RegExpExecArray | null;
+  while ((memberMatch = memberAccessRegex.exec(windowText))) {
+    fields.add(memberMatch[1]);
+  }
+
+  return Array.from(fields).map((name) => ({ name }));
+}
+
 function addFieldNames(fields: Set<string>, rawFieldList: string): void {
   for (const part of rawFieldList.split(',')) {
     const name = part.split(':')[0].split('=')[0].trim();

@@ -14,6 +14,7 @@ export interface ApiEndpoint {
   line: number;
   framework: 'express' | 'nestjs';
   bodyFields: RequestBodyField[];
+  queryFields?: RequestBodyField[];
 }
 
 export interface ScanError {

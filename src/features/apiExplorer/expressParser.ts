@@ -1,5 +1,5 @@
 import { ApiEndpoint } from './types';
-import { extractBodyFields } from './bodyFieldExtractor';
+import { extractBodyFields, extractQueryFields } from './bodyFieldExtractor';
 
 /**
  * Matches Express/Koa-router-style `app.get('/path', ...)`,
@@ -33,7 +33,8 @@ export function parseExpressRoutes(text: string, filePath: string): ApiEndpoint[
       filePath,
       line: match.line,
       framework: 'express',
-      bodyFields: extractBodyFields(windowText)
+      bodyFields: extractBodyFields(windowText),
+      queryFields: extractQueryFields(windowText)
     };
   });
 }
