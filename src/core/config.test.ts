@@ -49,7 +49,7 @@ describe('loadConfig', () => {
     fs.writeFileSync(path.join(projectRoot, 'config.json'), '{ not valid json');
 
     expect(() => loadConfig(projectRoot)).not.toThrow();
-    expect(loadConfig(projectRoot).model).toBe('qwen3:8b');
+    expect(loadConfig(projectRoot).model).toBe('llama3:latest');
   });
 
   it('lets explicit VS Code setting overrides win over config.json', () => {
