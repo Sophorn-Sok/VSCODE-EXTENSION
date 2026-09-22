@@ -38,7 +38,8 @@ export function parseNestJsRoutes(text: string, filePath: string): ApiEndpoint[]
         filePath,
         line: block.startLine + lineOffset,
         framework: 'nestjs',
-        bodyFields: extractBodyFields(windowText)
+        bodyFields: extractBodyFields(windowText),
+        queryFields: []
       });
     }
   }
